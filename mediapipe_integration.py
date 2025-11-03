@@ -10,7 +10,7 @@ hands = mp_hands.Hands(static_image_mode=False,
                        min_detection_confidence=0.5, 
                        min_tracking_confidence=0.5)
 
-input_folder = '/Users/sid/Desktop/Project/Videos/ResizedFrames' 
+input_folder = '/Users/sidxcodes/Developer/sign-language-detection/dataset' 
 
 data = []
 labels = []

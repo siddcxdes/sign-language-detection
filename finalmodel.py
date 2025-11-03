@@ -59,10 +59,11 @@ while True:
             
             prediction = model.predict([np.asarray(data_aux)])
         
-            predicted_label = prediction[0]  # Directly use the predicted label
+            predicted_number = prediction[0]  # Get the predicted number (0-25)
+            predicted_label = label[predicted_number]  # Convert to letter using the label dictionary
                 
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 4)
-            cv2.putText(frame, predicted_label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, str(predicted_label), (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (255, 0, 0), 3, cv2.LINE_AA)
 
         cv2.imshow('Hand Detection', frame)
 
