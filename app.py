@@ -7,12 +7,17 @@ from PIL import Image
 import time
 
 # Load the trained model
+import os
+
+# Get the absolute path to the model file
+model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model.p')
+
 try:
-    with open('model.p', 'rb') as f:
+    with open(model_path, 'rb') as f:
         model_dict = pickle.load(f)
         model = model_dict['model']
-except:
-    st.error("Error: Could not load the model file 'model.p'")
+except Exception as e:
+    st.error(f"Error: Could not load the model file 'model.p': {str(e)}")
     st.stop()
 
 # Initialize MediaPipe
@@ -84,17 +89,20 @@ def main():
     video_placeholder = st.empty()
     
     if st.session_state.running:
-        cap = cv2.VideoCapture(0)
-        
-        # Set the camera resolution
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
         try:
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                st.error("Failed to open camera. Please make sure camera permissions are granted.")
+                st.stop()
+                
+            # Set the camera resolution
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
             while st.session_state.running:
                 ret, frame = cap.read()
                 if not ret:
-                    st.error("Failed to capture video")
+                    st.error("Failed to capture video frame")
                     break
 
                 # Process frame and detect hands
