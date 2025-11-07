@@ -2,21 +2,39 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import pickle
+import os
 
-model_dict = pickle.load(open('./model.p', 'rb'))
-model = model_dict['model']
+# Use os.path for more robust file path handling
+model_path = os.path.join(os.path.dirname(__file__), 'model.p')
+try:
+    with open(model_path, 'rb') as f:
+        model_dict = pickle.load(f)
+        model = model_dict['model']
+except Exception as e:
+    print(f"Error loading model: {e}")
+    raise
 
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
-hands = mp_hands.Hands(static_image_mode=False,
-                       min_detection_confidence=0.5,
-                       max_num_hands=1,
-                       min_tracking_confidence=0.5)
+try:
+    hands = mp_hands.Hands(static_image_mode=False,
+                        min_detection_confidence=0.5,
+                        max_num_hands=1,
+                        min_tracking_confidence=0.5)
+except Exception as e:
+    print(f"Error initializing MediaPipe Hands: {e}")
+    raise
 
-vid = cv2.VideoCapture(0)
+try:
+    vid = cv2.VideoCapture(0)
+    if not vid.isOpened():
+        raise ValueError("Could not open video capture device")
+except Exception as e:
+    print(f"Error opening video capture: {e}")
+    raise
 
 label = {i: chr(65 + i) for i in range(26)}
 
@@ -26,8 +44,8 @@ while True:
     y_ = []
     try:
         res, frame = vid.read()
-        if not res:
-            print('unable to capture the frame')
+        if not res or frame is None:
+            print('Unable to capture the frame')
             break
         H, W = frame.shape[:2]
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
