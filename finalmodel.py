@@ -1,11 +1,27 @@
 import cv2
-import mediapipe as mp
 import numpy as np
 import pickle
 import os
+import sys
+import importlib.util
 
-# Use os.path for more robust file path handling
-model_path = os.path.join(os.path.dirname(__file__), 'model.p')
+# Function to safely import mediapipe
+def import_mediapipe():
+    try:
+        import mediapipe as mp
+        return mp
+    except ImportError:
+        print("Installing mediapipe...")
+        import subprocess
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "mediapipe==0.8.11"])
+        import mediapipe as mp
+        return mp
+
+# Import mediapipe safely
+mp = import_mediapipe()
+
+# Use os.path for robust file path handling
+model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model.p')
 try:
     with open(model_path, 'rb') as f:
         model_dict = pickle.load(f)
@@ -19,22 +35,39 @@ mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
-try:
-    hands = mp_hands.Hands(static_image_mode=False,
-                        min_detection_confidence=0.5,
-                        max_num_hands=1,
-                        min_tracking_confidence=0.5)
-except Exception as e:
-    print(f"Error initializing MediaPipe Hands: {e}")
-    raise
+# Initialize MediaPipe components with fallback options
+def initialize_hands():
+    try:
+        mp_hands = mp.solutions.hands
+        hands = mp_hands.Hands(
+            static_image_mode=False,
+            min_detection_confidence=0.5,
+            max_num_hands=1,
+            min_tracking_confidence=0.5,
+            model_complexity=0  # Use simpler model for better compatibility
+        )
+        return hands, mp_hands
+    except Exception as e:
+        print(f"Error initializing MediaPipe Hands: {e}")
+        raise
 
-try:
-    vid = cv2.VideoCapture(0)
-    if not vid.isOpened():
-        raise ValueError("Could not open video capture device")
-except Exception as e:
-    print(f"Error opening video capture: {e}")
-    raise
+# Initialize video capture with error handling
+def initialize_video():
+    try:
+        vid = cv2.VideoCapture(0)
+        if not vid.isOpened():
+            # Try alternative video source
+            vid = cv2.VideoCapture(-1)
+            if not vid.isOpened():
+                raise ValueError("Could not open any video capture device")
+        return vid
+    except Exception as e:
+        print(f"Error opening video capture: {e}")
+        raise
+
+# Initialize components
+hands, mp_hands = initialize_hands()
+vid = initialize_video()
 
 label = {i: chr(65 + i) for i in range(26)}
 
@@ -92,5 +125,12 @@ while True:
         print('some error occurred:', e)
         continue
 
-vid.release()
-cv2.destroyAllWindows()
+# Cleanup
+try:
+    if 'vid' in locals():
+        vid.release()
+    cv2.destroyAllWindows()
+except Exception as e:
+    print(f"Error during cleanup: {e}")
+finally:
+    print("Application terminated")
